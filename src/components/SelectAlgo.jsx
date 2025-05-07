@@ -6,6 +6,7 @@ import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
 import {useState,useEffect, useRef} from "react";
 import { motion, AnimatePresence, transform } from "framer-motion";
 import GraphDisplay from "./GraphDisplay";
+import VisualArray from "./VisualArray";
 
 const algorithmData = {
     Sorting: ["Bubble Sort", "Quick Sort", "Merge Sort", "Selection Sort", "Insertion Sort"],
@@ -169,6 +170,44 @@ const insertionSort = async (arr, updateGraph, setCompared, setSorted) => {
     setCompared([]);
   };
   
+const linearSearch = async (arr, target, updateGraph, setCompared, setFound) => {
+    for (let i = 0; i < arr.length; i++) {
+      setCompared([i]);                     // highlight the current index
+      await new Promise(res => setTimeout(res, 300));
+  
+      if (arr[i] === target) {
+        setFound(i);                        // highlight found index
+        setCompared([]);
+        return;
+      }
+    }
+    setCompared([]); // clear after not found
+  };
+
+const binarySearch = async (arr, target, updateGraph, setCompared, setFound) => {
+    let low = 0;
+    let high = arr.length - 1;
+  
+    while (low <= high) {
+      let mid = Math.floor((low + high) / 2);
+      setCompared([mid]);                  // highlight mid
+      await new Promise(res => setTimeout(res, 400));
+  
+      if (arr[mid] === target) {
+        setFound(mid);
+        setCompared([]);
+        return;
+      } else if (arr[mid] < target) {
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+  
+    setCompared([]);
+  };
+  
+  
 
   const complexityData = {
     "Bubble Sort": {
@@ -246,6 +285,8 @@ function SelectAlgo() {
     average: "N/A",
     worst: "N/A"
     };
+    const [compared, setCompared] = useState([]);
+    const [found, setFound] = useState(null);
 
 
     useEffect(() => {
@@ -291,9 +332,23 @@ function SelectAlgo() {
         setShowGraph(true);
         setIsSorting(true);
         const selectedAlgo = currentList[currentIndex];
-        const sortFunction = algorithmMap[selectedAlgo];
-        if (sortFunction) {
-            await sortFunction([...array], setArray, setComparedIndices, setSortedIndices);
+        if(currentGroup === "Sorting"){
+            const sortFunction = algorithmMap[selectedAlgo];
+            if(sortFunction){
+                await sortFunction([...array], setArray, setComparedIndices,setSortedIndices);
+            }
+        }else if (currentGroup === "Searching"){
+            const searchFunction = selectedAlgo === "Linear Search" ? linearSearch : binarySearch;
+            const target = array[Math.floor(Math.random() *array.length)];
+            const sortedArray = [...array].sort((a,b) => a-b);
+
+            await searchFunction(
+                selectedAlgo === "Binary Search" ? sortedArray : array,
+                target,
+                setArray,
+                setCompared,
+                setFound
+            );
         }
     };
       
@@ -321,28 +376,6 @@ function SelectAlgo() {
                 <ChevronDownIcon className="h-5 w-4 text-white"/>
             </button>
 
-            {/* {open && (
-            <AnimatePresence>
-                <motion.div
-                className="menu absolute right-0 mt-10 bg-white border border-gray-200 rounded-lg shadow-lg z-10 mr-12"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                >
-                <ul className="text-left">
-                    {algorithmCategories.map((category,ind) => ( 
-                    <li className="px-10 py-2 hover:bg-gray-100 cursor-pointer shadow-md flex gap-4 
-                    items-center hover:font-semibold transition-transform duration-200 hover:scale-105"
-                    key={ind}>
-                        {category}
-                        <IoIosArrowForward className="h-4 w-4 mt-1.5"/>
-                    </li>))}
-                    
-                </ul>
-                </motion.div>
-            </AnimatePresence>
-            )} */}
             </div>
 
             </div>
@@ -459,9 +492,16 @@ function SelectAlgo() {
                         </button>
                         <h2 className="text-xl font-bold mb-4 text-center text-black">Algorithm Visualization</h2>
                         <div className="border border-gray-400 flex items-center justify-center rounded-md graph">
+                            currentGroup === "Sorting" ? (
                             <GraphDisplay array={array} 
                             comparedIndices={comparedIndices}
                             sortedIndices={sortedIndices}/>
+                            ) : (
+                                <VisualArray
+                                array={array}
+                                compared={compared}
+                                found={found}/>
+                            )
                         </div>
                         
                     </div>
